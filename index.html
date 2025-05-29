@@ -17,7 +17,8 @@
 				<button type=button id="loadbtn" > Load another 50 images </button>
 		  	</div>	
 			<img src="https://volcview.wr.usgs.gov/ashcam-api/images/webcams/ys-bbsn/current.jpg" alt="webcam_image" style="width:100%; height:100%;" id="webcam"> 
-
+			<br>
+			<a href="https://github.com/Joel-Hecht/Black_Diamond_Webcam_Monitor"> github page </a>
 		<script>
 			var slider = document.getElementById("snapsrange");
 			var slidertext = document.getElementById("stext");
@@ -101,6 +102,10 @@
 			async function changeRange(range) {
 				
 				let thisadd =  parseInt(range) - slider.max; //assume we exclusively are increasing range from previous
+
+				slider.max = range;
+				slider.value = range;
+
 				console.log("new range: " + thisadd);
 				
 				let fetchlist = await fetchJSONData(thisadd);
@@ -128,9 +133,6 @@
 				console.log(jsonlist);
 				images = jsonlist.concat(images);
 				console.log(jsonlist);
-
-				slider.max =range;
-				slider.value = range;
 
 				recalculateSlider();
 

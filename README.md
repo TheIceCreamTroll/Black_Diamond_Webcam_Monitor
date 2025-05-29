@@ -3,7 +3,7 @@ you only need index.html, the rest is candy
 
 Designed to be run on a web server.  I am currently running it on
 ```
-https://www.cs.drexel.edu/~jrh436/bd/
+https://www.cs.drexel.edu/~jrh436/blackdiamond/
 ```
 
 # api stuff
