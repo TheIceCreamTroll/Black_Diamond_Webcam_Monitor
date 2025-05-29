@@ -4,7 +4,7 @@
 			        <title>black diamond webcam range</title>
 		</head>
 
-	   	<body onload="changeRange('50')">	
+	   	<body>	
 			<div class="slidecontainer" >
 				<p>Current: <span id="stext"></span> </p>
 				<p>Timestamp (MDT): <span id="timetxt"></span> (these timestamps are wrong use the ones in the image) </p>
@@ -59,16 +59,12 @@
 
 			async function fetchJSONData(count) {
 			    var obj;
-				var jsonlink= "https://api.allorigins.win/get?url=" + "https://volcview.wr.usgs.gov/ashcam-api/imageApi/webcam/ys-bbsn/0/" + nextmax + "/newestFirst/" + count.toString();
+				var jsonlink= "https://proxy.catboyjoel.com/get?url=" + "https://volcview.wr.usgs.gov/ashcam-api/imageApi/webcam/ys-bbsn/0/" + nextmax + "/newestFirst/" + count.toString();
 				console.log(jsonlink);
 				await fetch( jsonlink , { 
-					type: "GET",
-					dataType: "jsonp",
-					method: "GET",
-					mode: "cors",
 					//prevent caching here because it will not update with latest json
 					headers: {
-					 	'Content-Type': 'application/json',
+					 	//'Content-Type': 'application/json',
 						//'Cache-Control': 'no-cache'
 					}
 				 })
@@ -78,7 +74,7 @@
 				    }
 				    return response.json();  
 				})
-				.then((data) => { obj = JSON.parse(data.contents)["images"]; return obj; })
+				.then((data) => {  obj = data["images"]; return obj; })
 				.then(() => {console.log(obj);}); 
 				//.catch(error => console.error('Failed to fetch data:', error)); 
 			
@@ -172,6 +168,8 @@
 			document.getElementById("loadbtn").addEventListener('click', function () {
 				addAnother50();
 			})
+
+			changeRange('50');
 
 		</script>
     	</body>
