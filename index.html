@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+	    <head>
+			        <title>black diamond webcam range</title>
+		</head>
+
+	   	<body onload="changeRange('50')">	
+			<div class="slidecontainer" >
+				<p>Current: <span id="stext"></span> </p>
+				<p>Timestamp (MDT): <span id="timetxt"></span> (these timestamps are wrong use the ones in the image) </p>
+				<div style="display: inline;">
+					  <button type=button  > - </button>
+					  <button type=button  > + </button> 
+				</div>
+				<input type="range" style="width: 70%"  step="1" min="" max="0" value="0" class="slider" id="snapsrange">
+				<br>
+				<button type=button id="loadbtn" > Load another 50 images </button>
+		  	</div>	
+			<img src="https://volcview.wr.usgs.gov/ashcam-api/images/webcams/ys-bbsn/current.jpg" alt="webcam_image" style="width:100%; height:100%;" id="webcam"> 
+
+		<script>
+			var slider = document.getElementById("snapsrange");
+			var slidertext = document.getElementById("stext");
+			var timetext = document.getElementById("timetxt");
+			var webcam = document.getElementById("webcam");
+
+			var nextmax = 99999999999999999; //unix time of the next maximum, by defualt is infinity or something
+			slidertext.innerHTML=slider.value;
+
+			var globvalue = 0;	
+			var images = [];
+			var data = [];
+
+			slider.oninput = recalculateSlider;
+
+			function recalculateSlider() {
+				slidertext.innerHTML = slider.value;
+				globvalue = slider.value;	
+				webcam.src = images[globvalue - 1][1]; 
+
+				let t = images[globvalue - 1 ][0];
+				t_MDT = t + (6 * 60) //gain 6 hours to convert to MDT
+				var date = new Date( t_MDT * 1000); //convert to millis
+				//date.setTime(date.getTime() + 6 * 60 * 1000); //lose 6 hours to convert to MDT
+				var hours = date.getUTCHours();
+				var minutes = date.getUTCMinutes();
+				var month = date.getUTCMonth()
+				var day = date.getUTCDay();
+				var datestring = month + "/" + day + " @ " + hours + ":" + minutes;
+				timetext.innerHTML = datestring;
+			}
+	
+			function setData(d) {
+				data = Array.from(d);
+				//console.log(data);
+			}
+
+			async function fetchJSONData(count) {
+			    var obj;
+				var jsonlink= "https://api.allorigins.win/get?url=" + "https://volcview.wr.usgs.gov/ashcam-api/imageApi/webcam/ys-bbsn/0/" + nextmax + "/newestFirst/" + count.toString();
+				console.log(jsonlink);
+				await fetch( jsonlink , { 
+					type: "GET",
+					dataType: "jsonp",
+					method: "GET",
+					mode: "cors",
+					//prevent caching here because it will not update with latest json
+					headers: {
+					 	'Content-Type': 'application/json',
+						//'Cache-Control': 'no-cache'
+					}
+				 })
+				.then(response => {
+				    if (!response.ok) {
+					throw new Error(`HTTP error! Status: ${response.status}`);
+				    }
+				    return response.json();  
+				})
+				.then((data) => { obj = JSON.parse(data.contents)["images"]; return obj; })
+				.then(() => {console.log(obj);}); 
+				//.catch(error => console.error('Failed to fetch data:', error)); 
+			
+			    console.log(obj);
+			    return obj;
+			}
+
+			function cacheimages(images, range) {
+				if (typeof cacheimages.list === 'undefined'){
+					cacheimages.list = [];
+				}
+				for (let i = 0 ; i < range; i++) {
+					var img = new Image();
+					cacheimages.list.push(img);
+					//delete references later if this works
+					img.src = images[i];
+					console.log("cached:");
+					console.log(images[i]);
+				}
+			}
+
+			async function changeRange(range) {
+				
+				let thisadd =  parseInt(range) - slider.max; //assume we exclusively are increasing range from previous
+				console.log("new range: " + thisadd);
+				
+				let fetchlist = await fetchJSONData(thisadd);
+
+				let jsonlist = []
+				for(let i = 0; i < thisadd ; i++) {
+					let n = [];
+					n.push(fetchlist[i]["imageTimestamp"]);
+					n.push(fetchlist[i]["imageUrl"])
+					jsonlist.push(n);	
+				}
+
+				console.log(jsonlist);
+
+				imagestocache= [];
+				for(let i = 0; i < thisadd ; i++){ 
+					imagestocache.push(jsonlist[i][1]);
+				}
+				
+				cacheimages(imagestocache, thisadd);
+			
+				//copy in global scope
+				//var newimages = jsonlist.slice(0, slider.max);
+				jsonlist.reverse();
+				console.log(jsonlist);
+				images = jsonlist.concat(images);
+				console.log(jsonlist);
+
+				slider.max =range;
+				slider.value = range;
+
+				recalculateSlider();
+
+				//loading another 50 wil pick up where this one left off
+				nextmax = (images[0][0] - 1).toString();
+				console.log("nextmax: " + nextmax);
+
+			}
+
+			function addValue(v) {
+				let intv = parseInt(v)
+				let prev = parseInt(globvalue);
+				result = (prev + v);
+				//console.log(result)
+				//console.log(globvalue)
+				//console.log(slider.getAttribute("value"))
+				slider.value = result;
+				recalculateSlider();
+			}
+
+			function addAnother50() {
+				//changerange
+				changeRange(parseInt(slider.max) + 50);
+			}
+
+
+			let button = document.getElementsByTagName('button');
+			button[0].addEventListener('click', function () {
+				addValue(-1);
+			})
+
+			button[1].addEventListener('click', function () {
+				addValue(1);
+			})
+			
+			document.getElementById("loadbtn").addEventListener('click', function () {
+				addAnother50();
+			})
+
+		</script>
+    	</body>
+</html>
