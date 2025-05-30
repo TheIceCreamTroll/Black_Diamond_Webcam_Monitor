@@ -1,22 +1,27 @@
 <!DOCTYPE html>
 <html>
 	    <head>
-			        <title>black diamond webcam range</title>
+				<title>black diamond webcam range</title>
+				<link rel="stylesheet" type="text/css" href="./mobileslider.css" >
 		</head>
 
-	   	<body>	
-			<div class="slidecontainer" >
-				<p>Current: <span id="stext"></span> </p>
-				<p>Timestamp (MDT): <span id="timetxt"></span> (these timestamps are wrong use the ones in the image) </p>
-				<div style="display: inline;">
-					  <button type=button  > - </button>
-					  <button type=button  > + </button> 
-				</div>
-				<input type="range" style="width: 70%"  step="1" min="" max="0" value="0" class="slider" id="snapsrange">
-				<br>
-				<button type=button id="loadbtn" > Load another 50 images </button>
-		  	</div>	
-			<img src="https://volcview.wr.usgs.gov/ashcam-api/images/webcams/ys-bbsn/current.jpg" alt="webcam_image" style="width:100%; height:100%;" id="webcam"> 
+	   	<body>
+
+			<!--<div id="menu" style="position: absolute; top: 0; width: 100%; background-color: #FFFFFF;"> -->
+			<div id="menu" style="width: 100%; background-color: #FFFFFF;">
+				<div class="slidecontainer" >
+					<p>Current: <span id="stext"></span> </p>
+					<p>Timestamp (MDT): <span id="timetxt"></span> (these timestamps are wrong use the ones in the image) </p>
+					<div style="display: inline;">
+						  <button type=button  style="width: 40px; height: 40px;font-size: 30px;"> - </button>
+						  <button type=button  style="width: 40px; height: 40px; font-size: 30px;"> + </button> 
+					</div>
+					<input type="range" style="width: 70%; height: 100px;"  step="1" min="" max="0" value="0" class="slider" id="snapsrange">
+					<br>
+					<button type=button id="loadbtn" style="width: 250px; height: 50px; font-size: 20px;"> Load another 50 images </button>
+				</div>	
+			</div>
+			<img src="https://volcview.wr.usgs.gov/ashcam-api/images/webcams/ys-bbsn/current.jpg" alt="webcam_image" style="height:75vmin; " id="webcam"> 
 			<br>
 			<a href="https://github.com/Joel-Hecht/Black_Diamond_Webcam_Monitor"> github page </a>
 
