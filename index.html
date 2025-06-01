@@ -73,28 +73,34 @@
 			}
 
 			async function fetchJSONData(count) {
-			    var obj;
-				var jsonlink= "https://proxy.catboyjoel.com/get?url=" + "https://volcview.wr.usgs.gov/ashcam-api/imageApi/webcam/ys-bbsn/0/" + nextmax + "/newestFirst/" + count.toString();
-				console.log(jsonlink);
-				await fetch( jsonlink , { 
-					//prevent caching here because it will not update with latest json
-					headers: {
-					 	//'Content-Type': 'application/json',
-						//'Cache-Control': 'no-cache'
+				const targetUrl = "https://volcview.wr.usgs.gov/ashcam-api/imageApi/webcam/ys-bbsn/0/" + nextmax + "/newestFirst/" + count.toString();
+				
+				const proxies = [
+					{
+						url: url => "https://proxy.catboyjoel.com/get?url=" + url,
+						parse: data => data.images
+					},
+					{
+						url: url => "https://api.allorigins.win/get?url=" + url,
+						parse: data => JSON.parse(data.contents).images
 					}
-				 })
-				.then(response => {
-				    if (!response.ok) {
-					throw new Error(`HTTP error! Status: ${response.status}`);
-				    }
-				    return response.json();  
-				})
-				.then((data) => {  obj = data["images"]; return obj; })
-				.then(() => {console.log(obj);}); 
-				//.catch(error => console.error('Failed to fetch data:', error)); 
-			
-			    console.log(obj);
-			    return obj;
+				];
+				
+				for (const proxy of proxies) {
+					try {
+						console.log(proxy.url(targetUrl));
+						const response = await fetch(proxy.url(targetUrl));
+						if (!response.ok) throw new Error(`HTTP ${response.status}`);
+						const data = await response.json();
+						const obj = proxy.parse(data);
+						console.log(obj);
+						return obj;
+					} catch (error) {
+						console.error(`Proxy failed:`, error.message);
+					}
+				}
+				
+				throw new Error('All proxies failed');
 			}
 
 			function cacheimages(images, range) {
