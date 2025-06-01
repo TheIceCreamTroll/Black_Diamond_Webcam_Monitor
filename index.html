@@ -11,7 +11,9 @@
 			<div id="menu" style="width: 100%; background-color: #FFFFFF;">
 				<div class="slidecontainer" >
 					<p>Current: <span id="stext"></span> </p>
-					<p>Timestamp (MDT): <span id="timetxt"></span> </p>
+          
+					<p>Timestamp (MDT): <span id="timetxt"></span></p>
+
 					<div style="display: inline;">
 						  <button type=button  style="width: 40px; height: 40px;font-size: 30px;"> - </button>
 						  <button type=button  style="width: 40px; height: 40px; font-size: 30px;"> + </button> 
@@ -46,17 +48,24 @@
 				webcam.src = images[globvalue - 1][1]; 
 
 				let t = images[globvalue - 1 ][0];
-				t_MDT = t - (6 * 60 * 60) //gain 6 hours to convert to MDT
-				var date = new Date( t_MDT * 1000); //convert to millis
-				//date.setTime(date.getTime() + 6 * 60 * 1000); //lose 6 hours to convert to MDT
-				var hours = date.getUTCHours();
-				var minutes = date.getUTCMinutes();
-				var month = date.getUTCMonth()
-				var day = date.getUTCDate();
-				var datestring = month + "/" + day + " @ " + hours + ":" + minutes;
+
+				var date = new Date(t * 1000); // convert to milliseconds
+
+				// Use toLocaleString with America/Denver timezone (handles MST/MDT automatically)
+				var datestring = date.toLocaleString('en-US', {
+					timeZone: 'America/Denver',
+					year: 'numeric',
+					month: '2-digit',
+					day: '2-digit',
+					hour: '2-digit',
+					minute: '2-digit',
+					hour12: false
+				});
+
+
 				timetext.innerHTML = datestring;
 			}
-	
+
 			function setData(d) {
 				data = Array.from(d);
 				//console.log(data);
