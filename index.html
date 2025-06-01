@@ -11,7 +11,9 @@
 			<div id="menu" style="width: 100%; background-color: #FFFFFF;">
 				<div class="slidecontainer" >
 					<p>Current: <span id="stext"></span> </p>
+          
 					<p>Timestamp (MDT): <span id="timetxt"></span></p>
+
 					<div style="display: inline;">
 						  <button type=button  style="width: 40px; height: 40px;font-size: 30px;"> - </button>
 						  <button type=button  style="width: 40px; height: 40px; font-size: 30px;"> + </button> 
@@ -32,7 +34,7 @@
 			var webcam = document.getElementById("webcam");
 
 			var nextmax = 99999999999999999; //unix time of the next maximum, by defualt is infinity or something
-			slidertext.innerHTML=slider.value;
+			slidertext.innerHTML="<15 minutes ago"
 
 			var globvalue = 0;	
 			var images = [];
@@ -41,11 +43,12 @@
 			slider.oninput = recalculateSlider;
 
 			function recalculateSlider() {
-				slidertext.innerHTML = slider.value;
+				slidertext.innerHTML = "<" + ((parseInt(slider.max) - parseInt(slider.value)) * 15).toString() + " minutes ago";
 				globvalue = slider.value;	
 				webcam.src = images[globvalue - 1][1]; 
 
 				let t = images[globvalue - 1 ][0];
+
 				var date = new Date(t * 1000); // convert to milliseconds
 
 				// Use toLocaleString with America/Denver timezone (handles MST/MDT automatically)
@@ -58,6 +61,7 @@
 					minute: '2-digit',
 					hour12: false
 				});
+
 
 				timetext.innerHTML = datestring;
 			}
