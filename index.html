@@ -20,7 +20,8 @@
 					</div>
 					<input type="range" style="width: 70%; height: 100px;"  step="1" min="" max="0" value="0" class="slider" id="snapsrange">
 					<br>
-					<button type=button id="loadbtn" style="width: 250px; height: 50px; font-size: 20px;"> Load another 50 images </button>
+					<input type="number" id="loadcount" value="50" min="1" max="500" style="width: 80px; height: 46px; font-size: 20px; text-align: center;">
+					<button type=button id="loadbtn" style="width: 250px; height: 50px; font-size: 20px;"> Load more images </button>
 				</div>	
 			</div>
 			<img src="https://volcview.wr.usgs.gov/ashcam-api/images/webcams/ys-bbsn/current.jpg" alt="webcam_image" style="height:75vmin; " id="webcam"> 
@@ -165,8 +166,18 @@
 			}
 
 			function addAnother50() {
-				//changerange
-				changeRange(parseInt(slider.max) + 50);
+				let countInput = document.getElementById('loadcount');
+				let count = parseInt(countInput.value);
+				
+				if (isNaN(count) || count < 1) {
+					count = 50; // Default to 50 if invalid
+					countInput.value = 50;
+				} else if (count > 500) {
+					count = 500; // Cap at 500
+					countInput.value = 500;
+				}
+				
+				changeRange(parseInt(slider.max) + count);
 			}
 
 
@@ -182,6 +193,15 @@
 			document.getElementById("loadbtn").addEventListener('click', function () {
 				addAnother50();
 			})
+			
+			document.getElementById('loadcount').addEventListener('input', function() {
+				let count = parseInt(this.value);
+				if (!isNaN(count) && count > 0) {
+					document.getElementById("loadbtn").textContent = `Load ${count} more images`;
+				}
+			});
+			
+			document.getElementById("loadbtn").textContent = "Load 50 more images";
 
 			changeRange('50');
 
