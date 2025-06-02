@@ -392,17 +392,19 @@ function App() {
                   <div className="text-right">
                     <button
                       onClick={() => setShowJumpModal(true)}
-                      className="btn btn-sm btn-ghost"
+                      className="btn btn-sm btn-ghost text-right"
                     >
-                      <span className="text-sm text-base-content/70">
-                        Image {currentIndex + 1} of {displayImages.length}
-                      </span>
-                    </button>
-                    {webcamInfo && (
-                      <div className="text-xs text-base-content/50">
-                        Total available: {webcamInfo.imageTotal.toLocaleString()}
+                      <div>
+                        <p className="text-sm text-base-content/70">
+                          Image {currentIndex + 1} of {displayImages.length}
+                        </p>
+                        {webcamInfo && (
+                          <p className="text-sm text-base-content/50">
+                            Total available: {webcamInfo.imageTotal.toLocaleString()}
+                          </p>
+                        )}
                       </div>
-                    )}
+                    </button>
                   </div>
                 </div>
 
@@ -499,7 +501,6 @@ function App() {
                     )}
                     
                     <span className="text-sm text-base-content/70">
-                      Currently showing {displayImages.length} images
                       {showInterestingOnly && ` (${allImages.length} total)`}
                     </span>
                   </div>
