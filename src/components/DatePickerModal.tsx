@@ -37,7 +37,7 @@ export function DatePickerModal({
             min={webcamInfo ? new Date(webcamInfo.firstImageTimestamp * 1000).toISOString().slice(0, 16) : undefined}
           />
           {webcamInfo && (
-            <label className="label">
+            <label className="label mt-2">
               <span className="label-text-alt">
                 Earliest: {new Date(webcamInfo.firstImageTimestamp * 1000).toLocaleDateString()}
               </span>

@@ -412,7 +412,7 @@ function App() {
                   <div>
                     <button
                       onClick={() => setShowDatePicker(true)}
-                      className="btn btn-sm btn-ghost text-left"
+                      className="btn btn-sm btn-outline btn-primary text-left hover:btn-primary px-4 py-6"
                     >
                       <div>
                         <p className="text-sm text-base-content/70">
@@ -435,7 +435,7 @@ function App() {
                   <div className="text-right">
                     <button
                       onClick={() => setShowJumpModal(true)}
-                      className="btn btn-sm btn-ghost text-right"
+                      className="btn btn-sm btn-outline btn-secondary text-right hover:btn-secondary px-4 py-6"
                     >
                       <div>
                         <p className="text-sm text-base-content/70">
