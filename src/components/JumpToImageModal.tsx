@@ -34,7 +34,13 @@ export function JumpToImageModal({
           <input
             type="number"
             value={jumpToImage}
-            onChange={(e) => setJumpToImage(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value
+              // Only allow positive numbers
+              if (value === '' || parseInt(value) >= 0) {
+                setJumpToImage(value)
+              }
+            }}
             className="input input-bordered w-full text-center text-lg"
             placeholder={`1-${webcamInfo?.imageTotal || displayImagesLength}`}
             min="1"

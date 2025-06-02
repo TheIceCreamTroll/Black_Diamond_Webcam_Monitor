@@ -480,7 +480,15 @@ function App() {
                           min="1"
                           max="500"
                           value={inputLoadCount}
-                          onChange={(e) => setInputLoadCount(parseInt(e.target.value) || 50)}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value)
+                            // Only allow positive numbers, default to 50 if invalid
+                            if (!isNaN(value) && value > 0) {
+                              setInputLoadCount(value)
+                            } else if (e.target.value === '') {
+                              setInputLoadCount(50)
+                            }
+                          }}
                           className="input input-bordered w-24 text-center"
                         />
                         <button
