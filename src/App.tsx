@@ -1,105 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
-
-interface WebcamImage {
-  imageId: number
-  md5: string
-  webcamCode: string
-  newestForWebcam: string
-  imageTimestamp: number
-  imageDate: string
-  isNighttimeInd: string
-  interestingCode: string
-  imageUrl: string
-}
-
-interface WebcamInfo {
-  webcamCode: string
-  webcamName: string
-  imageTotal: number
-  firstImageTimestamp: number
-  lastImageTimestamp: number
-  currentImageUrl: string
-}
-
-interface ApiResponse {
-  images: WebcamImage[]
-  webcam: WebcamInfo
-  meta: {
-    imageTotal: number
-    firstImageTimestamp: number
-    lastImageTimestamp: number
-  }
-}
-
-const WEBCAM_CODE = 'ys-bbsn'
-const API_BASE = 'https://volcview.wr.usgs.gov/ashcam-api'
-const FIFTEEN_MINUTES = 15 * 60 * 1000
-
-// API fetch functions
-async function fetchInterestingImages(limit: number = 50): Promise<ApiResponse> {
-  const url = `${API_BASE}/imageApi/interesting`
-  console.log('[API] Fetching interesting images:', url)
-  
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch interesting images: ${response.status} ${response.statusText}`)
-  }
-  
-  const data = await response.json()
-  console.log(`[API] Fetched ${data.images?.length || 0} interesting images`)
-  
-  // Filter for our webcam and limit results
-  if (data.images) {
-    data.images = data.images
-      .filter((img: WebcamImage) => img.webcamCode === WEBCAM_CODE)
-      .slice(0, limit)
-    console.log(`[API] Filtered to ${data.images.length} images for webcam ${WEBCAM_CODE}`)
-  }
-  
-  return data
-}
-async function fetchWebcamImagesByDays(days: number, limit: number = 50): Promise<ApiResponse> {
-  const url = `${API_BASE}/imageApi/webcam/${WEBCAM_CODE}/${days}/newestFirst/${limit}`
-  console.log('Fetching images by days:', url)
-  
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch images: ${response.status} ${response.statusText}`)
-  }
-  
-  const data: ApiResponse = await response.json()
-  console.log(`[API] Fetched ${data.images.length} images from last ${days} days`)
-  console.log('[API] Volcanic activity count:', data.images.filter(img => img.interestingCode === 'V').length)
-  console.log('[API] Interesting codes distribution:', 
-    data.images.reduce((acc, img) => {
-      acc[img.interestingCode] = (acc[img.interestingCode] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
-  )
-  return data
-}
-
-async function fetchWebcamImagesByTimestamp(
-  startTimestamp: number,
-  endTimestamp: number,
-  limit: number = 500,
-  order: 'newestFirst' | 'oldestFirst' = 'newestFirst'
-): Promise<ApiResponse> {
-  const url = `${API_BASE}/imageApi/webcam/${WEBCAM_CODE}/${startTimestamp}/${endTimestamp}/${order}/${limit}`
-  console.log('Fetching images by timestamp:', url)
-  
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch images: ${response.status} ${response.statusText}`)
-  }
-  
-  const data: ApiResponse = await response.json()
-  console.log(`[API] Fetched ${data.images.length} images (${new Date(startTimestamp * 1000).toLocaleString()} - ${new Date(endTimestamp * 1000).toLocaleString()})`)
-  console.log('[API] Volcanic activity count:', data.images.filter(img => img.interestingCode === 'V').length)
-  return data
-}
+import type { ApiResponse, WebcamInfo } from './types'
+import { fetchInterestingImages, fetchWebcamImagesByDays, fetchWebcamImagesByTimestamp } from './api'
+import { calculateMissingImageTimestamps, calculateImageStats } from './utils/imageStats'
+import { DatePickerModal } from './components/DatePickerModal'
+import { JumpToImageModal } from './components/JumpToImageModal'
+import { MissingImagesModal } from './components/MissingImagesModal'
 
 function App() {
   const queryClient = useQueryClient()
@@ -224,57 +131,10 @@ function App() {
   }, [initialData])
 
   // Calculate missing image timestamps first
-  const missingImageTimestamps = useMemo(() => {
-    if (displayImages.length < 2) return []
-    
-    const missingTimes: { timestamp: number; date: Date }[] = []
-    const images = [...displayImages].sort((a, b) => a.imageTimestamp - b.imageTimestamp)
-    
-    // Check for gaps between consecutive images
-    for (let i = 0; i < images.length - 1; i++) {
-      const currentTime = images[i].imageTimestamp
-      const nextTime = images[i + 1].imageTimestamp
-      const gap = nextTime - currentTime
-      
-      // If gap is more than 18 minutes (allowing 3 minute tolerance for 15-minute intervals)
-      // This catches cases where an image should exist at the 15-minute mark
-      if (gap > 1080) { // 18 minutes in seconds
-        // Calculate expected timestamps at 15-minute intervals
-        let expectedTime = currentTime + 900 // Add 15 minutes
-        
-        while (expectedTime < nextTime - 180) { // Stop 3 minutes before the next image
-          missingTimes.push({
-            timestamp: expectedTime,
-            date: new Date(expectedTime * 1000)
-          })
-          expectedTime += 900 // Add another 15 minutes
-        }
-      }
-    }
-    
-    // Sort by timestamp descending (newest first)
-    missingTimes.sort((a, b) => b.timestamp - a.timestamp)
-    
-    return missingTimes
-  }, [displayImages])
+  const missingImageTimestamps = useMemo(() => calculateMissingImageTimestamps(displayImages), [displayImages])
 
   // Calculate expected vs actual images based on missing timestamps
-  const imageStats = useMemo(() => {
-    if (displayImages.length < 2) return null
-    
-    const firstTimestamp = displayImages[displayImages.length - 1].imageTimestamp
-    const lastTimestamp = displayImages[0].imageTimestamp
-    const timeDiff = (lastTimestamp - firstTimestamp) * 1000
-    const expectedImages = Math.floor(timeDiff / FIFTEEN_MINUTES) + 1
-    const actualMissing = missingImageTimestamps.length
-    
-    return {
-      expected: expectedImages,
-      actual: displayImages.length,
-      missing: actualMissing,
-      coverage: ((displayImages.length / expectedImages) * 100).toFixed(1)
-    }
-  }, [displayImages, missingImageTimestamps])
+  const imageStats = useMemo(() => calculateImageStats(displayImages, missingImageTimestamps), [displayImages, missingImageTimestamps])
 
   const currentImage = displayImages[currentIndex]
   
@@ -650,169 +510,31 @@ function App() {
         )}
       </div>
 
-      {showDatePicker && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-md">
-            <h3 className="font-bold text-2xl mb-2">Load Images From Date</h3>
-            <p className="text-base-content/70 mb-6">Load all images from this date to present</p>
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text text-base font-medium">Start Date/Time</span>
-              </label>
-              <input
-                type="datetime-local"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="input input-bordered w-full"
-                max={new Date().toISOString().slice(0, 16)}
-                min={webcamInfo ? new Date(webcamInfo.firstImageTimestamp * 1000).toISOString().slice(0, 16) : undefined}
-              />
-              {webcamInfo && (
-                <label className="label">
-                  <span className="label-text-alt">
-                    Earliest: {new Date(webcamInfo.firstImageTimestamp * 1000).toLocaleDateString()}
-                  </span>
-                </label>
-              )}
-            </div>
-            <div className="modal-action mt-8">
-              <button className="btn btn-ghost" onClick={() => {
-                setShowDatePicker(false)
-                setStartDate('')
-              }}>
-                Cancel
-              </button>
-              <button 
-                className="btn btn-primary" 
-                onClick={handleDateSubmit}
-                disabled={!startDate}
-              >
-                Load Images
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => {
-            setShowDatePicker(false)
-            setStartDate('')
-          }}></div>
-        </div>
-      )}
+      <DatePickerModal
+        showDatePicker={showDatePicker}
+        setShowDatePicker={setShowDatePicker}
+        startDate={startDate}
+        setStartDate={setStartDate}
+        webcamInfo={webcamInfo}
+        handleDateSubmit={handleDateSubmit}
+      />
 
-      {showJumpModal && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-sm">
-            <h3 className="font-bold text-2xl mb-2">Jump to Image</h3>
-            <p className="text-base-content/70 mb-6">
-              Enter image number (1-{webcamInfo?.imageTotal.toLocaleString() || displayImages.length})
-            </p>
-            <div className="form-control">
-              <input
-                type="number"
-                value={jumpToImage}
-                onChange={(e) => setJumpToImage(e.target.value)}
-                className="input input-bordered w-full text-center text-lg"
-                placeholder={`1-${webcamInfo?.imageTotal || displayImages.length}`}
-                min="1"
-                max={(webcamInfo?.imageTotal || displayImages.length).toString()}
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleJumpToImage()
-                  }
-                }}
-              />
-              {displayImages.length < (webcamInfo?.imageTotal || 0) && (
-                <label className="label">
-                  <span className="label-text-alt">
-                    Currently loaded: {displayImages.length.toLocaleString()} images
-                  </span>
-                </label>
-              )}
-            </div>
-            <div className="modal-action mt-8">
-              <button className="btn btn-ghost" onClick={() => {
-                setShowJumpModal(false)
-                setJumpToImage('')
-              }}>
-                Cancel
-              </button>
-              <button 
-                className="btn btn-primary" 
-                onClick={handleJumpToImage}
-                disabled={!jumpToImage || parseInt(jumpToImage) < 1 || parseInt(jumpToImage) > (webcamInfo?.imageTotal || displayImages.length) || isJumping}
-              >
-                {isJumping ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Loading...
-                  </>
-                ) : (
-                  'Jump'
-                )}
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => {
-            setShowJumpModal(false)
-            setJumpToImage('')
-          }}></div>
-        </div>
-      )}
+      <JumpToImageModal
+        showJumpModal={showJumpModal}
+        setShowJumpModal={setShowJumpModal}
+        jumpToImage={jumpToImage}
+        setJumpToImage={setJumpToImage}
+        webcamInfo={webcamInfo}
+        displayImagesLength={displayImages.length}
+        handleJumpToImage={handleJumpToImage}
+        isJumping={isJumping}
+      />
 
-      {showMissingModal && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-2xl max-h-[80vh]">
-            <h3 className="font-bold text-2xl mb-2">Missing Images</h3>
-            <p className="text-base-content/70 mb-4">
-              {missingImageTimestamps.length} images are missing from the expected 15-minute intervals
-            </p>
-            
-            <div className="overflow-y-auto max-h-[50vh]">
-              {missingImageTimestamps.length > 0 ? (
-                <div className="space-y-2">
-                  {missingImageTimestamps.map((missing, index) => (
-                    <div key={missing.timestamp} className="flex items-center justify-between p-3 bg-base-200 rounded-lg">
-                      <div>
-                        <div className="font-medium">
-                          {missing.date.toLocaleString('en-US', { 
-                            timeZone: 'America/Denver',
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
-                          })} MT
-                        </div>
-                        <div className="text-sm text-base-content/60">
-                          {formatDistanceToNow(missing.date, { addSuffix: true })}
-                        </div>
-                      </div>
-                      <div className="text-sm text-base-content/50">
-                        #{index + 1}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-center py-8 text-base-content/60">
-                  No missing images detected
-                </p>
-              )}
-            </div>
-            
-            <div className="modal-action mt-6">
-              <button 
-                className="btn btn-primary" 
-                onClick={() => setShowMissingModal(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setShowMissingModal(false)}></div>
-        </div>
-      )}
+      <MissingImagesModal
+        showMissingModal={showMissingModal}
+        setShowMissingModal={setShowMissingModal}
+        missingImageTimestamps={missingImageTimestamps}
+      />
     </div>
   )
 }
