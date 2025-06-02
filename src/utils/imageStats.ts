@@ -48,7 +48,7 @@ export function calculateImageStats(
   const actualMissing = missingImageTimestamps.length
   
   return {
-    expected: expectedImages,
+    expected: displayImages.length + actualMissing,
     actual: displayImages.length,
     missing: actualMissing,
     coverage: ((displayImages.length / expectedImages) * 100).toFixed(1)
