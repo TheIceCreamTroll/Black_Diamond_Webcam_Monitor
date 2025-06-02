@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import type { ApiResponse, WebcamInfo } from './types'
@@ -23,6 +23,9 @@ function App() {
   const [jumpToImage, setJumpToImage] = useState('')
   const [isJumping, setIsJumping] = useState(false)
   const [showMissingModal, setShowMissingModal] = useState(false)
+  const [displayImage, setDisplayImage] = useState<string | null>(null)
+  const [isImageLoading, setIsImageLoading] = useState(false)
+  const previousImageRef = useRef<string | null>(null)
 
   // Initial load - last 3 days
   const { 
@@ -137,6 +140,42 @@ function App() {
   const imageStats = useMemo(() => calculateImageStats(displayImages, missingImageTimestamps), [displayImages, missingImageTimestamps])
 
   const currentImage = displayImages[currentIndex]
+  
+  // Handle image loading and retention
+  useEffect(() => {
+    if (currentImage?.imageUrl) {
+      // If this is a different image, start loading process
+      if (displayImage !== currentImage.imageUrl) {
+        setIsImageLoading(true)
+        
+        // Create a new image element to preload
+        const img = new Image()
+        
+        img.onload = () => {
+          // Store previous image for seamless transition
+          previousImageRef.current = displayImage
+          setDisplayImage(currentImage.imageUrl)
+          setIsImageLoading(false)
+        }
+        
+        img.onerror = () => {
+          // If image fails to load, still update display
+          previousImageRef.current = displayImage
+          setDisplayImage(currentImage.imageUrl)
+          setIsImageLoading(false)
+        }
+        
+        img.src = currentImage.imageUrl
+      }
+    }
+  }, [currentImage?.imageUrl, displayImage])
+  
+  // Initialize display image on first load
+  useEffect(() => {
+    if (currentImage?.imageUrl && !displayImage) {
+      setDisplayImage(currentImage.imageUrl)
+    }
+  }, [currentImage?.imageUrl, displayImage])
   
   // Log current image state
   useEffect(() => {
@@ -282,7 +321,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-base-100 p-4">
+    <div className="h-screen bg-base-100 p-2 overflow-hidden">
       {showToast && (
         <div className="toast toast-top toast-center">
           <div className="alert alert-success">
@@ -291,8 +330,8 @@ function App() {
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-6">
+      <div className="max-w-6xl mx-auto h-full flex flex-col">
+        <h1 className="text-2xl font-bold text-center mb-2 flex-shrink-0">
           {webcamInfo?.webcamName} Webcam
         </h1>
 
@@ -350,11 +389,16 @@ function App() {
               <div className="space-y-4">
                 <div className="relative">
                   <img
-                    key={currentImage.imageId}
-                    src={currentImage.imageUrl}
+                    key={displayImage || currentImage.imageId}
+                    src={displayImage || currentImage.imageUrl}
                     alt={webcamInfo?.webcamName}
                     className="w-full h-auto rounded-lg shadow-lg"
                   />
+                  {isImageLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 rounded-lg">
+                      <span className="loading loading-spinner loading-lg text-primary"></span>
+                    </div>
+                  )}
                   <div className="absolute top-4 right-4 flex gap-2">
                     {currentImage.interestingCode === 'V' && (
                       <div className="badge badge-warning">🌋 Volcanic Activity</div>
