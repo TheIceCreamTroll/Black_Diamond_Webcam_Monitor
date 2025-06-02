@@ -384,19 +384,21 @@ function App() {
               </div>
             ) : displayedImage ? (
               <div className="space-y-4">
-                <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden shadow-lg">
-                  <img
-                    key={displayedImage.imageId}
-                    src={displayedImage.imageUrl}
-                    alt={webcamInfo?.webcamName}
-                    className="w-full h-full object-cover"
-                  />
-                  {loadingImage && (
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                      <span className="loading loading-spinner loading-lg text-white"></span>
-                    </div>
-                  )}
-                  <div className="absolute top-4 right-4 flex gap-2">
+                <div className="relative">
+                  <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden shadow-lg">
+                    <img
+                      key={displayedImage.imageId}
+                      src={displayedImage.imageUrl}
+                      alt={webcamInfo?.webcamName}
+                      className="w-full h-full object-cover"
+                    />
+                    {loadingImage && (
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <span className="loading loading-spinner loading-lg text-white"></span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute top-0 -right-36 flex flex-col gap-2 w-32">
                     {displayedImage.interestingCode === 'V' && (
                       <div className="badge badge-warning">🌋 Volcanic Activity</div>
                     )}
