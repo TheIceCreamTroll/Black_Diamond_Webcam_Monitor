@@ -228,29 +228,26 @@ function App() {
     if (displayImages.length < 2) return []
     
     const missingTimes: { timestamp: number; date: Date }[] = []
-    const existingTimestamps = new Set(displayImages.map(img => img.imageTimestamp))
+    const images = [...displayImages].sort((a, b) => a.imageTimestamp - b.imageTimestamp)
     
-    // Get the first and last timestamps
-    const firstTimestamp = displayImages[displayImages.length - 1].imageTimestamp
-    const lastTimestamp = displayImages[0].imageTimestamp
-    
-    // Generate all expected timestamps (every 15 minutes)
-    for (let ts = firstTimestamp; ts <= lastTimestamp; ts += 900) { // 900 seconds = 15 minutes
-      if (!existingTimestamps.has(ts)) {
-        // Check if there's an image within 1 minute of this timestamp
-        let found = false
-        for (let offset = -60; offset <= 60; offset += 1) {
-          if (existingTimestamps.has(ts + offset)) {
-            found = true
-            break
-          }
-        }
+    // Check for gaps between consecutive images
+    for (let i = 0; i < images.length - 1; i++) {
+      const currentTime = images[i].imageTimestamp
+      const nextTime = images[i + 1].imageTimestamp
+      const gap = nextTime - currentTime
+      
+      // If gap is more than 18 minutes (allowing 3 minute tolerance for 15-minute intervals)
+      // This catches cases where an image should exist at the 15-minute mark
+      if (gap > 1080) { // 18 minutes in seconds
+        // Calculate expected timestamps at 15-minute intervals
+        let expectedTime = currentTime + 900 // Add 15 minutes
         
-        if (!found) {
+        while (expectedTime < nextTime - 180) { // Stop 3 minutes before the next image
           missingTimes.push({
-            timestamp: ts,
-            date: new Date(ts * 1000)
+            timestamp: expectedTime,
+            date: new Date(expectedTime * 1000)
           })
+          expectedTime += 900 // Add another 15 minutes
         }
       }
     }
