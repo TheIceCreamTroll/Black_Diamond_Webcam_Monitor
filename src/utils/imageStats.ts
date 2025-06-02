@@ -1,5 +1,4 @@
 import type { WebcamImage } from '../types'
-import { FIFTEEN_MINUTES } from '../constants'
 
 export function calculateMissingImageTimestamps(displayImages: WebcamImage[]): { timestamp: number; date: Date }[] {
   if (displayImages.length < 2) return []
@@ -41,16 +40,14 @@ export function calculateImageStats(
 ) {
   if (displayImages.length < 2) return null
   
-  const firstTimestamp = displayImages[displayImages.length - 1].imageTimestamp
-  const lastTimestamp = displayImages[0].imageTimestamp
-  const timeDiff = (lastTimestamp - firstTimestamp) * 1000
-  const expectedImages = Math.floor(timeDiff / FIFTEEN_MINUTES) + 1
   const actualMissing = missingImageTimestamps.length
   
+  const totalExpected = displayImages.length + actualMissing
+  
   return {
-    expected: displayImages.length + actualMissing,
+    expected: totalExpected,
     actual: displayImages.length,
     missing: actualMissing,
-    coverage: ((displayImages.length / expectedImages) * 100).toFixed(1)
+    coverage: ((displayImages.length / totalExpected) * 100).toFixed(1)
   }
 }

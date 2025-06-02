@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
-import type { ApiResponse, WebcamInfo } from './types'
+import type { ApiResponse, WebcamInfo, WebcamImage } from './types'
 import { fetchInterestingImages, fetchWebcamImagesByDays, fetchWebcamImagesByTimestamp } from './api'
 import { calculateMissingImageTimestamps, calculateImageStats } from './utils/imageStats'
 import { DatePickerModal } from './components/DatePickerModal'
@@ -23,9 +23,8 @@ function App() {
   const [jumpToImage, setJumpToImage] = useState('')
   const [isJumping, setIsJumping] = useState(false)
   const [showMissingModal, setShowMissingModal] = useState(false)
-  const [displayImage, setDisplayImage] = useState<string | null>(null)
-  const [isImageLoading, setIsImageLoading] = useState(false)
-  const previousImageRef = useRef<string | null>(null)
+  const [displayedImage, setDisplayedImage] = useState<WebcamImage | null>(null)
+  const [loadingImage, setLoadingImage] = useState(false)
 
   // Initial load - last 3 days
   const { 
@@ -141,42 +140,40 @@ function App() {
 
   const currentImage = displayImages[currentIndex]
   
-  // Handle image loading and retention
+  // Preload images to prevent flickering
   useEffect(() => {
-    if (currentImage?.imageUrl) {
-      // If this is a different image, start loading process
-      if (displayImage !== currentImage.imageUrl) {
-        setIsImageLoading(true)
-        
-        // Create a new image element to preload
-        const img = new Image()
-        
-        img.onload = () => {
-          // Store previous image for seamless transition
-          previousImageRef.current = displayImage
-          setDisplayImage(currentImage.imageUrl)
-          setIsImageLoading(false)
-        }
-        
-        img.onerror = () => {
-          // If image fails to load, still update display
-          previousImageRef.current = displayImage
-          setDisplayImage(currentImage.imageUrl)
-          setIsImageLoading(false)
-        }
-        
-        img.src = currentImage.imageUrl
-      }
+    if (!currentImage) {
+      setDisplayedImage(null)
+      setLoadingImage(false)
+      return
     }
-  }, [currentImage?.imageUrl, displayImage])
-  
-  // Initialize display image on first load
-  useEffect(() => {
-    if (currentImage?.imageUrl && !displayImage) {
-      setDisplayImage(currentImage.imageUrl)
+
+    // If this is the first image or same image, show immediately
+    if (!displayedImage || displayedImage.imageId === currentImage.imageId) {
+      setDisplayedImage(currentImage)
+      setLoadingImage(false)
+      return
     }
-  }, [currentImage?.imageUrl, displayImage])
-  
+
+    // Start loading the new image
+    setLoadingImage(true)
+    const img = new Image()
+    
+    img.onload = () => {
+      // Image loaded successfully, update displayed image
+      setDisplayedImage(currentImage)
+      setLoadingImage(false)
+    }
+    
+    img.onerror = () => {
+      // Image failed to load, still update to show error state
+      setDisplayedImage(currentImage)
+      setLoadingImage(false)
+    }
+    
+    img.src = currentImage.imageUrl
+  }, [currentImage, displayedImage])
+
   // Log current image state
   useEffect(() => {
     console.log('[Current Image] Index:', currentIndex)
@@ -385,26 +382,26 @@ function App() {
                   </button>
                 </div>
               </div>
-            ) : currentImage ? (
+            ) : displayedImage ? (
               <div className="space-y-4">
-                <div className="relative">
+                <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden shadow-lg">
                   <img
-                    key={displayImage || currentImage.imageId}
-                    src={displayImage || currentImage.imageUrl}
+                    key={displayedImage.imageId}
+                    src={displayedImage.imageUrl}
                     alt={webcamInfo?.webcamName}
-                    className="w-full h-auto rounded-lg shadow-lg"
+                    className="w-full h-full object-cover"
                   />
-                  {isImageLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 rounded-lg">
-                      <span className="loading loading-spinner loading-lg text-primary"></span>
+                  {loadingImage && (
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                      <span className="loading loading-spinner loading-lg text-white"></span>
                     </div>
                   )}
                   <div className="absolute top-4 right-4 flex gap-2">
-                    {currentImage.interestingCode === 'V' && (
+                    {displayedImage.interestingCode === 'V' && (
                       <div className="badge badge-warning">🌋 Volcanic Activity</div>
                     )}
                     <div className="badge badge-neutral">
-                      {currentImage.isNighttimeInd === 'Y' ? '🌙 Night' : '☀️ Day'}
+                      {displayedImage.isNighttimeInd === 'Y' ? '🌙 Night' : '☀️ Day'}
                     </div>
                   </div>
                 </div>
@@ -417,7 +414,7 @@ function App() {
                     >
                       <div>
                         <p className="text-sm text-base-content/70">
-                          {new Date(currentImage.imageTimestamp * 1000).toLocaleString('en-US', { 
+                          {new Date(displayedImage.imageTimestamp * 1000).toLocaleString('en-US', { 
                             timeZone: 'America/Denver',
                             month: 'short',
                             day: 'numeric',
@@ -428,7 +425,7 @@ function App() {
                           })} MT
                         </p>
                         <p className="text-sm text-base-content/50">
-                          {formatDistanceToNow(new Date(currentImage.imageTimestamp * 1000), { addSuffix: true })}
+                          {formatDistanceToNow(new Date(displayedImage.imageTimestamp * 1000), { addSuffix: true })}
                         </p>
                       </div>
                     </button>
