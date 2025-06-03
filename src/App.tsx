@@ -253,7 +253,7 @@ function App() {
     }, [currentIndex, displayImages.length, currentImage])
 
     const handleLoadMore = useCallback(() => {
-        fetchNextPage()
+        void fetchNextPage()
     }, [fetchNextPage])
 
     const handleDateSubmit = async () => {
@@ -306,7 +306,7 @@ function App() {
 
     const handleRefresh = () => {
         setRetryCount((prev) => prev + 1)
-        refetchInitial()
+        void refetchInitial()
     }
 
     const handleJumpToImage = async () => {
@@ -347,7 +347,7 @@ function App() {
                 queryClient.setQueryData(['volcanic-images-initial'], data)
 
                 // Clear pagination data since we're resetting
-                queryClient.resetQueries({
+                void queryClient.resetQueries({
                     queryKey: ['volcanic-images-paginated'],
                 })
 
@@ -452,59 +452,61 @@ function App() {
                                     </button>
                                     <button
                                         className="btn btn-secondary"
-                                        onClick={async () => {
-                                            console.log(
-                                                '[No Images] Loading interesting images from API'
-                                            )
-                                            try {
-                                                const data =
-                                                    await fetchInterestingImages(
-                                                        100
-                                                    )
-                                                if (
-                                                    data.images &&
-                                                    data.images.length > 0
-                                                ) {
-                                                    queryClient.setQueryData(
-                                                        [
-                                                            'volcanic-images-initial',
-                                                        ],
-                                                        data
-                                                    )
-                                                    setToastMessage(
-                                                        `Loaded ${data.images.length} images with volcanic activity`
-                                                    )
-                                                    setShowToast(true)
-                                                    setTimeout(
-                                                        () =>
-                                                            setShowToast(false),
-                                                        5000
-                                                    )
-                                                } else {
-                                                    setToastMessage(
-                                                        'No volcanic activity images found for this webcam'
-                                                    )
-                                                    setShowToast(true)
-                                                    setTimeout(
-                                                        () =>
+                                        onClick={() => {
+                                            void (async () => {
+                                                console.log(
+                                                    '[No Images] Loading interesting images from API'
+                                                )
+                                                try {
+                                                    const data =
+                                                        await fetchInterestingImages(
+                                                            100
+                                                        )
+                                                    if (
+                                                        data.images &&
+                                                        data.images.length > 0
+                                                    ) {
+                                                        queryClient.setQueryData(
+                                                            [
+                                                                'volcanic-images-initial',
+                                                            ],
+                                                            data
+                                                        )
+                                                        setToastMessage(
+                                                            `Loaded ${data.images.length} images with volcanic activity`
+                                                        )
+                                                        setShowToast(true)
+                                                        setTimeout(
+                                                            () =>
+                                                                setShowToast(false),
+                                                            5000
+                                                        )
+                                                    } else {
+                                                        setToastMessage(
+                                                            'No volcanic activity images found for this webcam'
+                                                        )
+                                                        setShowToast(true)
+                                                        setTimeout(
+                                                            () =>
                                                             setShowToast(false),
                                                         5000
                                                     )
                                                 }
-                                            } catch (err) {
-                                                console.error(
-                                                    '[No Images] Error loading interesting images:',
-                                                    err
-                                                )
-                                                setToastMessage(
-                                                    'Error loading volcanic activity images'
-                                                )
-                                                setShowToast(true)
-                                                setTimeout(
-                                                    () => setShowToast(false),
-                                                    5000
-                                                )
-                                            }
+                                                } catch (err) {
+                                                    console.error(
+                                                        '[No Images] Error loading interesting images:',
+                                                        err
+                                                    )
+                                                    setToastMessage(
+                                                        'Error loading volcanic activity images'
+                                                    )
+                                                    setShowToast(true)
+                                                    setTimeout(
+                                                        () => setShowToast(false),
+                                                        5000
+                                                    )
+                                                }
+                                            })()
                                         }}
                                     >
                                         Load Volcanic Activity Images

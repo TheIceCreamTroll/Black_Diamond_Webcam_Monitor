@@ -7,7 +7,7 @@ interface JumpToImageModalProps {
     setJumpToImage: (value: string) => void
     webcamInfo: WebcamInfo | null
     displayImagesLength: number
-    handleJumpToImage: () => void
+    handleJumpToImage: () => Promise<void>
     isJumping: boolean
 }
 
@@ -53,7 +53,7 @@ export function JumpToImageModal({
                         autoFocus
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                                handleJumpToImage()
+                                void handleJumpToImage()
                             }
                         }}
                     />
@@ -78,7 +78,9 @@ export function JumpToImageModal({
                     </button>
                     <button
                         className="btn btn-primary"
-                        onClick={handleJumpToImage}
+                        onClick={() => {
+                            void handleJumpToImage()
+                        }}
                         disabled={
                             !jumpToImage ||
                             parseInt(jumpToImage) < 1 ||

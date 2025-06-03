@@ -6,7 +6,7 @@ interface DatePickerModalProps {
     startDate: string
     setStartDate: (date: string) => void
     webcamInfo: WebcamInfo | null
-    handleDateSubmit: () => void
+    handleDateSubmit: () => Promise<void>
 }
 
 export function DatePickerModal({
@@ -73,7 +73,9 @@ export function DatePickerModal({
                     </button>
                     <button
                         className="btn btn-primary"
-                        onClick={handleDateSubmit}
+                        onClick={() => {
+                            void handleDateSubmit()
+                        }}
                         disabled={!startDate}
                     >
                         Load Images

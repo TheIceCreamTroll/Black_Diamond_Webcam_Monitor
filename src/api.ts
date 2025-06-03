@@ -14,7 +14,7 @@ export async function fetchInterestingImages(
         )
     }
 
-    const data = await response.json()
+    const data = await response.json() as ApiResponse
     console.log(`[API] Fetched ${data.images?.length || 0} interesting images`)
 
     // Filter for our webcam and limit results
@@ -44,7 +44,7 @@ export async function fetchWebcamImagesByDays(
         )
     }
 
-    const data: ApiResponse = await response.json()
+    const data = await response.json() as ApiResponse
     console.log(
         `[API] Fetched ${data.images.length} images from last ${days} days`
     )
@@ -81,7 +81,7 @@ export async function fetchWebcamImagesByTimestamp(
         )
     }
 
-    const data: ApiResponse = await response.json()
+    const data = await response.json() as ApiResponse
     console.log(
         `[API] Fetched ${data.images.length} images (${new Date(startTimestamp * 1000).toLocaleString()} - ${new Date(endTimestamp * 1000).toLocaleString()})`
     )
