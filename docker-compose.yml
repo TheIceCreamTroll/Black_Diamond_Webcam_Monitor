@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   geyser-viewer:
-    image: hitchbot/geyser-viewer
+    image: hitchbot/geyser-viewer:testing  # Keep on testing while the main site is plain HTML
     container_name: geyser-viewer
     restart: unless-stopped
     ports:
