@@ -11,7 +11,7 @@ env:
   # Docker Hub username
   DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
   # Image name (typically your Docker Hub username/repository-name)
-  IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/proxy
+  IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/geyser-viewer
 
 jobs:
   build:
